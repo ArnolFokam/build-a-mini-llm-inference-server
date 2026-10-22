@@ -23,14 +23,20 @@ def apply_temperature(logits, temperature):
     return logits / temperature
 
 # Step 3 - top_k_filter
-import numpy as np
+def top_k_filter(logits: np.ndarray, k: int) -> np.ndarray:
+    """Keep the k largest logits per row and set the rest to -inf.
 
-def top_k_filter(logits, k):
-    """Mask logits outside the top-k per row to -inf."""
-    # TODO: keep only the k largest logits along the last axis, set the rest to -inf
-    partition = max(0, logits.shape[-1] - k)
-    kth = np.partition(logits, partition, axis=-1)[..., partition:partition + 1]
-    return np.where(logits >= kth, logits, float('-inf'))
+    Accepts shape (V,) or (B, V) and returns the same shape and dtype. If k >= V,
+    the logits are returned unchanged. Kept entries retain their original values.
+    """
+    logits = logits.copy()
+
+    if k >= logits.shape[-1]:
+        return logits
+
+    kth_largest = np.partition(logits, -k, axis=-1)[..., [-k]]
+    logits = np.where(logits >= kth_largest, logits, -np.inf)
+    return logits
 
 # Step 4 - top_p_filter
 def top_p_filter(logits, p):
