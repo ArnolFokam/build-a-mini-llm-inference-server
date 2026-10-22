@@ -1,2 +1,29 @@
-# build-a-mini-llm-inference-server
+# Build a Mini LLM Inference Server
+
 Construct a complete LLM inference stack from scratch: sampling, tokenization, a tiny transformer with KV caching, a paged attention allocator, continuous batching with scheduling, a streaming serving API, and a throughput/latency benchmark harness. This mirrors the architecture of modern serving systems like vLLM at a digestible scale.
+
+## How to run
+
+```bash
+python scaffold.py
+```
+
+## Steps
+
+- [x] **1.** stable_softmax
+- [x] **2.** apply_temperature
+- [x] **3.** top_k_filter
+- [x] **4.** top_p_filter
+- [x] **5.** sample_from_probs
+- [x] **6.** greedy_select
+- [x] **7.** build_vocab
+- [x] **8.** encode_prompt
+- [x] **9.** decode_tokens
+- [x] **10.** embed_tokens
+- [x] **11.** linear_projection
+- [x] **12.** init_kv_cache
+- [x] **13.** append_kv
+
+---
+
+Built on Deep-ML.
