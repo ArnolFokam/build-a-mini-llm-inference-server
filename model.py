@@ -167,3 +167,23 @@ def append_kv(cache, k_new, v_new):
     cache["length"] = min(length + t, capacity)
     return cache
 
+# Step 14 - causal_attention
+def causal_attention(
+    q, k, v, is_causal: bool = True
+):
+    """Scaled dot-product attention.
+
+    q has shape (Tq, D); k and v have shape (Tk, D). Returns shape (Tq, D). When
+    is_causal is True, query i may not attend to keys at positions j > i + (Tk - Tq),
+    so the usual causal mask applies when Tq == Tk, and a single decode query
+    (Tq == 1) attends to all Tk keys.
+    """
+    scores = q @ k.T / np.sqrt(q.shape[-1])
+
+    if is_causal:
+        Tq, Tk = scores.shape
+        allowed = np.tril(np.ones((Tq, Tk), dtype=bool), k=max(Tk - Tq, 0))
+        scores = np.where(allowed, scores, -np.inf)
+
+    return stable_softmax(scores) @ v
+
