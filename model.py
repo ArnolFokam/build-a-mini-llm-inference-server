@@ -72,31 +72,11 @@ def greedy_select(logits):
 
 # Step 7 - build_vocab
 def build_vocab(corpus, special_tokens):
-    # TODO: build a character-level vocab; specials get the lowest ids, then sorted unique chars.
-    build_vocab = {
-        'id_to_token': [],
-        'token_to_id': {}
-    }
-    counter = 0
-
-    # start with special_tokens
-    for tok in special_tokens:
-
-        if tok not in build_vocab['token_to_id']:
-            build_vocab['id_to_token'].append(tok)
-            build_vocab['token_to_id'][tok] = counter
-            counter += 1
-
-    # continue with the other tokens
-    chars = sorted({char for word in corpus for char in word})
-    for tok in chars:
-
-        if tok not in build_vocab['token_to_id']:
-            build_vocab['id_to_token'].append(tok)
-            build_vocab['token_to_id'][tok] = counter
-            counter += 1
-
-    return build_vocab
+    vocab = {}
+    unique_tokens = set(special_tokens + corpus)
+    vocab["id_to_token"] = {idx: token for idx, token in enumerate(unique_tokens)}
+    vocab["token_to_id"] = {token: idx for idx, token in vocab["id_to_token"].items()}
+    return vocab
 
 # Step 8 - encode_prompt
 def encode_prompt(text, vocab, add_bos=True):
