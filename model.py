@@ -72,6 +72,8 @@ def greedy_select(logits):
 
 # Step 7 - build_vocab
 def build_vocab(corpus, special_tokens):
+    # TODO: build a character-level vocab; specials get the lowest ids, then sorted unique chars.
+    
     vocab = {}
     unique_tokens = set(special_tokens + corpus)
     vocab["id_to_token"] = {idx: token for idx, token in enumerate(unique_tokens)}
@@ -144,14 +146,24 @@ def init_kv_cache(max_seq_len, d_model):
     }
 
 # Step 13 - append_kv
-import numpy as np
-
 def append_kv(cache, k_new, v_new):
-    # TODO: write k_new and v_new into the cache starting at cache['length'] and bump length.
-    start_idx = cache['length'] - 1
-    length = k_new.shape[0]
-    cache['K'][start_idx:start_idx + length, :] = k_new
-    cache['V'][start_idx:start_idx + length, :] = v_new
-    cache['length'] += length
+    """Write new key and value rows into the cache and advance its length.
+
+    k_new and v_new have shape (t, d_model). They are placed in cache["K"] and
+    cache["V"] starting at cache["length"], and the length grows by t. The cache is
+    mutated in place and returned.
+    """
+    length = cache["length"]
+    t = k_new.shape[0]
+    capacity = cache["K"].shape[0]
+
+    if length + t > capacity:
+        shift = capacity - length - t
+        cache["K"] = np.roll(cache["K"], shift=shift, axis=0)
+        cache["V"] = np.roll(cache["V"], shift=shift, axis=0)
+
+    cache["K"][length : length + t] = k_new
+    cache["V"][length : length + t] = v_new
+    cache["length"] = min(length + t, capacity)
     return cache
 
