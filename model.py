@@ -39,31 +39,26 @@ def top_k_filter(logits: np.ndarray, k: int) -> np.ndarray:
     return logits
 
 # Step 4 - top_p_filter
-def top_p_filter(logits, p):
-    # TODO: keep smallest set of tokens whose cumulative prob >= p, mask the rest to -inf.
+def top_p_filter(logits: np.ndarray, p: float) -> np.ndarray:
+    """Nucleus filter: keep the smallest set of tokens whose probability mass is >= p.
 
-    # 1. get the probabilities
-    scores = logits - logits.max(axis=-1, keepdims=True)
-    scores = np.exp(scores)
-    scores /= scores.sum(axis=-1, keepdims=True)
+    Accepts shape (V,) or (B, V) and filters along the last axis. Tokens are
+    ranked by probability (highest first); the smallest prefix whose cumulative
+    probability reaches p is kept and every other entry is set to -inf. Kept
+    entries retain their original logit values. p is in (0, 1]; p == 1 keeps
+    everything, and the top token is always kept.
+    """
+    probs = stable_softmax(logits)
+    sorted_idx = np.argsort(-probs, axis=-1, kind="stable")
+    sorted_probs = np.take_along_axis(probs, sorted_idx, axis=-1)
 
-    # 2. sort the probabilites and get the cumsum
-    sorted_idx = np.argsort(-scores, axis=-1)
-    keep_sorted = np.take_along_axis(scores, sorted_idx, axis=-1)
-    summed = np.cumsum(keep_sorted, axis=-1)
+    # Keep a token while the mass ranked above it is still below p.
+    mass_before = np.cumsum(sorted_probs, axis=-1) - sorted_probs
+    sorted_keep = mass_before < p
 
-    # 3. get the mask used to update the original array
-    shifted_summed = np.concatenate(
-        [np.zeros_like(scores)[..., :1], summed[..., :-1]],
-        axis=-1
-    )
-    mask = shifted_summed < p
-
-    # 4. map the mask back to the original array
-    keep = np.empty_like(keep_sorted)
-    np.put_along_axis(keep, sorted_idx, mask, axis=-1)
-
-    return np.where(keep, logits, float('-inf'))
+    keep = np.zeros_like(sorted_keep)
+    np.put_along_axis(keep, sorted_idx, sorted_keep, axis=-1)
+    return np.where(keep, logits, -np.inf)
 
 # Step 5 - sample_from_probs
 def sample_from_probs(probs, rng):
